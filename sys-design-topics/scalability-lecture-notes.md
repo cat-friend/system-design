@@ -53,6 +53,7 @@ What does this actually mean?
                 * private - can't see - privacy properties - can't be contacted directly
                 * public - the world can see
 
+## Load balancing
 ### How can load balancer decide which server to handle the request?
 Request arrives at load balancer -> balancer decides which server to send request (usu least busy) -> request sent to Server X (TCP/IP) -> server gets packet -> server responds to request -> response goes to load balancer -> load balancer sends response
 * all servers must be identical
@@ -77,3 +78,45 @@ What's a simpler approach?
     * RAID10 - 4 drives - striping and redundancy
     * RAID5, RAID6 - variants of RAID1 3, 4, 5 drives - only 1 used for redundancy - better economy of scale
     * RAID6 - any 2 drives can die before you have to buy a new drive
+
+### How do you implement load balancing?
+* Software
+    * Elastic load balancer
+    * HAProxy
+    * Linus virtual server
+* Hardware
+    * Barracuda, cisco, etc - very overpriced
+### Sticky sessions
+visit a website multiple times, you have the same session object (end up on the same BE server)
+* shared storage
+* cookies
+    * store session data privacy issues, size issues
+    * can store token to access specific server - exposes server IP/ID
+        * what if IP changes?
+        * security risk
+        * load balancer can have a key:value pair, key: random num, value: actual IP of server
+* PHP accelerators - limits discarding of PHP off-codes; .pyc is python equivalent
+
+## Caching
+Caching is bad if value has changed
+### Craigslist example
+file-based caching approach
+redundancy in every single page
+better performance for serving static content, but sacrifices disk space
+trivial changes are a big deal - need to find and replace/regenerate all bazillion places
+
+### MySQL query cache
+My.cnf - config file
+query_cache_type = 1 -> enables query cache
+If you enable query cache
+
+### memcache
+* expensive to do SELECT * FROM Users - execute once and save results in RAM and cache in RAM
+* store in table that has indexes
+* cache is finite, disk is finite - eventually cache can get so big that you can't keep it on the machine
+    * solution - LRU cache
+
+## Database replication
+
+
+## Database partitioning
