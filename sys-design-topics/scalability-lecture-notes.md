@@ -116,7 +116,30 @@ If you enable query cache
 * cache is finite, disk is finite - eventually cache can get so big that you can't keep it on the machine
     * solution - LRU cache
 
+### archive tables
+* compressed - slower to access but take up less disk space
+* typical usage - log files, dx data
+
 ## Database replication
+Make automatic copies of something
+### Single main database paradigm
+* Have a main database - read/write from and to; main has multiple mirrors - their purpose is to get copies of the main db; main and mirrors are all identical
+* pros
+    * uptime
+    * good for more read-heavy websites
+* cons
+    * what if the main drive dies?
+        * single point of failure for writes
 
+### Double main database paradigm
+* Two mains are mirrors
+* still need to route traffic
 
+### Multi-tiered architecture
+Client network --> load balancer
+load balancer --> multiple webservers receive read/write queries --> go to load balancer --> go to MySQL mirrors
+
+Points of failure - MySQL main, load balancers
+
+1:20:19 timestamp
 ## Database partitioning
