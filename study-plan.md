@@ -1,5 +1,5 @@
 ALL:
-system design topics: https://github.com/donnemartin/system-design-primer#index-of-system-design-topics
+system design topics: https://github.com/donnemartin/system-design-primer#system-design-topics-start-here
 
 company engineering blogs: https://github.com/donnemartin/system-design-primer#company-engineering-blogs
 
