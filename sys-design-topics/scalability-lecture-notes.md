@@ -141,5 +141,21 @@ load balancer --> multiple webservers receive read/write queries --> go to load 
 
 Points of failure - MySQL main, load balancers
 
-1:20:19 timestamp
+load balancers sometimes use heartbeats - sent horizontally; two modes:  active-active or active-passive
+
 ## Database partitioning
+Ex:  Facebook server for each school
+Problem - need to cross Harvard-MIT boundary
+Name cluster-based load balancers
+
+### Summary of info up to this point
+1. Have multiple web servers - need sticky sessions
+    1. What's the best option?
+        * Load balancer, load balancer has cookie to remember which server to send user to
+2. database
+    * need redundancy
+3. partition database - sends user to same database each time based on user data
+    * problem - single point of failure
+    * solution - 2 main databases that mirror each other
+    * need cross connect - but now load balancer needs to be done in code
+        * solution - connect load balancer between web servers and databases
