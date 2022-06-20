@@ -159,3 +159,23 @@ Name cluster-based load balancers
     * solution - 2 main databases that mirror each other
     * need cross connect - but now load balancer needs to be done in code
         * solution - connect load balancer between web servers and databases
+            * this load balancer can't do application-level load balancing, only binary load balancing; application-level load balancing (ex: user last names) will be done on the web servers as that level operates via HTTP requests
+            * cons - single point of failure
+            * solution to LB - redundant load balancer
+    * then need redundant switches; switches need to be intelligent so that there aren't loops
+    * point of failure - data center goes offline (ISP, power to building)
+        * solution - redundant data center inside and between geographical availability zones
+
+Multiple identical data centers, how to load balance?
+* DNS can do geography based load balancing
+* still have potential downtime - browser/computer has cached IP address of that data center - need to wait for TTL to expire
+
+What kind of internet traffic needs to be allowed in and out of the building?
+* in: TCP.80, 443, 22 (ssh, ssl vpn)
+* load balancers -> web servers
+    * TCP 80
+    * offload SSL to load balancer - pros: put SSL certificate only on load balancer, can get cheaper web servers
+* web servers -> databases
+    * SQL queries - TCP 3306
+
+If you have firewalling capabilities, can further lock things down - only expose certain ports because principle of least privilege - only open doors that people need to go through - limits bad actors
