@@ -55,3 +55,11 @@ Common objects to cache:
 * fully rendered blog articles
 * activity streams
 * user <-> friend relationships
+
+## 4. Asynchronism
+1. "bake the bread at night and sell them in the morning" - do the time-consuming work in advance and serve the nfinished work with a low request time
+    * used to turn dynamic content into static content
+
+2. queue of jobs for worker to process - when finished, frontend waits for "job is done" signal; asynchronism is great  because backends become nearly infinitely scalable and frontends become snappy
+
+** if you do something time consuming, try to do it always asynchronously ** 
