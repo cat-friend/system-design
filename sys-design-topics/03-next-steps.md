@@ -255,10 +255,29 @@ Types of traffic routing:
 * workers in the napplication layer also help enable asynchronism
 
 ## Microservices
-* definition - suite of independently deployable, small, modular services; each ser
+* definition - suite of independently deployable, small, modular services; each service runs a unique process and communicates through a well-defined, lightweight mechanism to serve a business goal
+
 ## Service discovery
+* software can help services find each other by keeping track of registered names, addresses, and ports
+* health checks help verify service integrity and are often done using an HTTP endpoint
+
+## Disadvantages
+* adding an application layer with loosely coupled services requires a different approach from an architectural, operations, and process viewpoint (vs a monolithic system)
+* microservices can add complexity in terms of deployments and operations
+
 # Database
 ## Relational database management system (RDBMS)
+* definition - collection of daata items organized in tables
+* must have ACID properties
+* many ways to scale
+
+### ACID
+Atomicity, Consistency, Isolation, Durability
+* Atomicity - each transaction is all or nothing
+* Consistency - any transaction will bring the database from one valid state to another
+* Isolation - executing transactions concurrently has the nsame results as if the transactions were executed serially
+* Durability - once a transaction has been committed, it will remain so
+
 ### Master-slave replication
 ### Master-master replication
 ### Federation
