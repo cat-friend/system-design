@@ -132,21 +132,130 @@ Types of traffic routing:
 * DNS services can be attacked; prevents users from accessing websites without knowing the website's IP address(es)
 
 # Content delivery network
+* CDN - globally distributed network of proxy servers
+    * serves content from locations closer to the user
+    * usually, static files (HTML/CSS/JS, photos, videos) served via CDN
+    * dynamic content - Amazon's CloudFront
+    * website's DNS resolution will tell clientns which server to contact
+
+* Why is CDN good?
+    * users receive content from data centers close to them (low latency)
+    * servers do not have to serve requests that the CDN fulfills
+
 ## Push CDNs
+* Push CDNs receive new content whenever changes occur on the server
+* you take full responsibility for providing content, uploading directly to the CDN and rewriting URLs to point to the CDN
+* can configure when content expires and when it is updated
+* content is uploaded only when it is new or changed, minimizing traffic, but maximizing storage
+
+* optimal uses - sites with a small amount of traffic, sites with content that isn't updated often as content is placed on the CDN once, instead of being re-pulled at regular intervals
+
 ## Pull CDNs
+* Pull CDNs grab new content from server when the nfirst user requests the ncontent
+* leave the content on server and rewire URLs to point to the CDN
+* ** SLOWER REQUEST ** until the content is cached on the CDN
+
+* TTL determines how long content is cached on CDN
+* CDN storage space minimized but can create redundant traffic if files expire and are pulled before they have actually changed
+
+* Sites with heavy traffic work well with pull CDNs - traffic is spread out more evenly with only recently-requested content remaining on the CDN
+    * probably uses an LRU cache
+
+## Disadvantages
+* CDN costs depend on traffic, so could be significant --> should be weighed against additional costs you would icur not using a CDN
+* content might be stale if it is updated before the TTL expires it
+* CDNs require changing URLs for static content to point to the CDN
 
 # Load balancer
-## Active-passive
-## Active-active
+* Definition - load balancers distribute incoming client requests to computer resources such as application servers and databases
+* load balancer returns the response from the computer resource to the appropriate client
+* route traffic to a set of servers serving the same function
+* **Load balancers are good at**
+    * preventing requests from going to unhealthy servers
+    * preventing overloading resources (servers)
+    * helping to eliminate a single point of failure
+
+* can be implemented via hardware (expensive) or with software (ex: HAProxy)
+
+* **Benefits**
+    * SSL termination - decrypts incoming requests/encrypts server responses so backend servers do not have to perform these potentially expensive operations
+        * removes the need to install X.509 certs on each server
+    * session persistence - issue cookies and route a specific client's requests to same instance if the web apps do not keep track of sessions
+
+* fail-protection
+    * set up multiple load balances, either in active-passive or active-active mode
+
+* methods of routing
+    * random
+    * least loaded
+    * session/cookies - user connected to which server last?
+    * round robin or weighted round robin
+    * Layer 4
+    * Layer 7
+
 ## Layer 4 load balancing
+* decides how to distribute requests by looking at information within the transport layer
+* typical information **FROM HEADER** used:  source, destination IP address, ports
+    * does NOT consider packet contents
+* forwards network packets to and from the upstream server, performing Network Address Translation (NAT)
+
 ## Layer 7 load balancing
+* decides how to distribute requests by looking at information in the application layer
+* typical information used:  contents of the header, emssage, and cookies
+* L7LB terminate network traffic, reads the message, makes a load-balancing decision, then opens a connection to the selected server
+    * example: direct video traffic to video hosting servers, directs sensitive user billing traffic to security-hardened servers
+
+
+## Tradeoffs
+**L4LB** - requires less time and computing resources
+**L7LB** - requires more time and computing resources, but performance impact can be minimal on modern commodity hardware
+
+## Disadvantages
+* LB can become a performance bottleneck if it does not have enough resources or if it not configured properly
+* introducing a load balancer to help eliminate a single point of failure results in increased complexity
+* a single load balancer is a single point of failure; multiple load balancers -> increases complexity
+
 ## Horizontal scaling
+* LBs can help with horizontal scaling -> improving performance and availability
+    * scaling via commodity machines is more cost efficient and results in higher availability than scaling up a single server on more expensive hardware
+        * easier to hire talent for commodity hardware than for specialized enterprise systems
+
+### Disadvantages of horizontal scaling
+* introduces complexity and requires cloning servers
+    * servers should be stateless - should not contain any user-related data like sessions or profile pictures
+    * sessions can be stored in a centralized data store such as a database or a persistent cache
 
 # Reverse proxy (web server)
+* Definition - a web server that centralizes internal services and provides unified interfaces to the public
+* Method:
+    * requests from clients are forwarded to a server than can fulfill it before the reverse proxy returns the server's response to the client
+* Benefits
+    * increased security - hide information about backend servers, blacklist IPs, limit number of connections per client
+    * increased scalability and flexibility - clients only see the reverse proxy's IP, allowing you to scale servers or change their configuration
+    * SSL termination - decrypt incoming requests and encrypt server responses so backend servers do not have to perform these potentially expensive operations
+        * removes the need to intall X.509 certs on each server
+    * compression - compress server responses
+    * caching - return the response for cached requests
+    * static content - serve static content directly
+
+## Disadvantages
+* introducing a RP results in increased complexity
+* a single RP is a single point of failure, having multiple RPs further increases complexity
+
 ## Load balancer vs reverse proxy
+* **LB** is usedful when you have multiple servers
+* **RP** is useful even with only one server/application server because of benefits listed above
+* NGINX and HAProxy can support L7RP and load balancing
 
 # Application layer
+* separate web layer from application layer -> allows you to scale and configure bboth layers independently
+* adding new API results in adding application servers without necessarily adding additional web servers
+* SRP advocates for small and autonomous services that work together
+* small teams with small services can plan more aggressiely for rapid growth
+* workers in the napplication layer also help enable asynchronism
+
 ## Microservices
+* definition - suite of independently deployable, small, modular services; each ser
 ## Service discovery
 # Database
 ## Relational database management system (RDBMS)
