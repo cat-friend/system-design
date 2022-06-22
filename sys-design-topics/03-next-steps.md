@@ -384,11 +384,84 @@ Benchmarking and profiling might point you to the following optimizations:
     * in some cases, the query cache could lead to performance issues
 
 ## NoSQL
+NoSQL is a collection of data items represented in a key-value store, document store, wide column store, or a graph database. Data is _denormalized_ and joins are generally done in the application code
+**Most NoSQL stores lack true ACID and favor eventual consistency**
+
+**BASE** is often used to describe the properties of NoSQL databases. BASE chooses AVAILABILITY over CONSISTENCY.
+* Basically available - the system guarantees availability (provides a read even if it's not the most recent data)
+* Soft state - the state of the system may change over time, even without input
+* Eventual consistency - the system will become consistent over a period of time, given that the system doesn't receive input during that period
+
 ### Key-value store
+(A hash table)
+* high performance - K-V store allows for O(1) reads and writes
+* often backed by memory or SSD.
+* Data stores can maintain keys in lexicographic order, allows efficient retrieval of key ranges.
+* K-V stores can allow for storing of metadata with a value
+
+* often used for simple data models or for capidly changing data, such as an in-memory cache layer
+* offers a limited set of operations
+    * complexity is shifted to the application layer if additional operations are needed
+
+* foundation for more complex systems, like document store and sometimes a graph database
+
 ### Document store
+DS is centered around documents (XML, JSON, binary, etc), where a document stores all information for a given object
+* provide APIs or a query language to query based on the internal structure of the document itself
+
+* depending on underlying implementation, documents are organized by collections, tags, metadata, or directories
+    * docs can be organized or grouped together, documents may have fields that are completely different from each other
+
+* some document stores (MongoDB, CouchDB) provide SQL-like language to perform complex queries
+* DynamoDB supports key-values and documents
+
+#### Benefits
+* high flexibility
+* used for working with occasionally changing data
+
 ### Wide column store
+Data structure: nested map
+* Basic unit of data is a column (name/value pair)
+* column can be grouped in column families (nested within the column) etc
+* can access each column independetly with a row key, columns with the same row key form a row
+* each value contains a timestamp for versioning and for conflict resolution
+
+Examples:
+* Bigtable - first wide column store
+* Hbase - often used in the Hadoop ecosystem
+* Cassandra from fb
+* keys maintained in lexicographic order - generalization of the alphabetical order
+
+* offer high availability and high scalability - often used for very large data sets
+
 ### Graph Database
+Data structure: graph
+
+* each node is a record and each arc is a relationship between two nodes
+* optimized to represent complex relationships with many foreign keys or many-to-many relatioships
+* high performance for data models with complex relationships, like a social network
+* relatively new, not yet widely-used
+* many graphs can only be access with ReST APIs
+
 ## SQL or NoSQL
+| reasons for SQL | reasons for NoSQL|
+|-----------------|------------------|
+| structured data | semi-structured data|
+| strict schema| dynamic or flexible schema|
+| relational data| non-relational data|
+|need for complex joins|no need for complex joins|
+|transactions|store many TB (or PB) of data|
+|clear patterns for scaling|very data intensive workload|
+| more established: developers, community, code, tools, etc| very high throughput for IOPS|
+|lookups by index are very fast| |
+
+Sample data well-suited for NoSQL:
+* rapid ingeset of clickstream and log data
+* leaderboard or scoring data
+* temporary data, such as a shopping cart
+* frequency accessed ('hot') tables
+* metadata/lookup tables
+
 # Cache
 ## Client caching
 ## CDN caching
