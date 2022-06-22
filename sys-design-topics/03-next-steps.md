@@ -278,12 +278,111 @@ Atomicity, Consistency, Isolation, Durability
 * Isolation - executing transactions concurrently has the nsame results as if the transactions were executed serially
 * Durability - once a transaction has been committed, it will remain so
 
-### Master-slave replication
+There are many techniques to scale a relational database: master-slave replication, master-master replication, federation, sharding, denormalization, and SQL tuning.
+
+### Master-slave replication (what a gross name)
+Main - serves reads and writes, replicates writes to 1+ mirrors
+Mirrors can also replicate to additional mirrors in a tree-like fashion
+If main fails, system can operate in read-only mode until a mirror promotes to main or a new main is provisioned
+
 ### Master-master replication
+both mains serve reads and writes and coordinate with each other on writes; if either goes down, the system can continue to operate with both reads and writes
+
+* **Disadvantages**:
+    * need a load balancer or need to make changes to application logic to determine where to write
+    * most main-main systems are either loosely consistent (violates ACID!!) or have increased write latency due to synchronization
+    * conflict resolution comes more into play as more write nodes are added and as latency increases
+
+### Disadvantages of replication
+* additional logic is needed to promote mirror to main
+* potential loss of data if main fails before any newly written data can be replicated to other nodes
+* writes replayed to the replicas -- if there are a lot of writes, the read replicas can be overburdened with replaying writes and can't serve as many reads
+* the more read mirrors, the more you have to replicate, leads to greater replication lag
+* on some systems, writing to the master can spawn multiple threads tow rite in parallel, whereas read replicas onl support writing sequentially with a single thread
+* replication adds more hardware and additional complexity
+
 ### Federation
+* definition - aka functional partitioning - splits up databases by function
+    * ex: products db : users db : forums db
+* result is less read and write traffic to each database and therefore less replication lag
+* smaller databases result in more data that can fit in memory, which in turn results in more cache hits due to improved cache locality
+* no single central main serializing writes, you can write in parallel, increasing throughput
+
+#### Disadvantages
+* NOT EFFECTIVE if your schema requires huge functions or tables
+* need to update application logic to determine which database to read and write
+* joining data from two databases is more complex with a server link
+* adds more hardware --> additional complexity
+
 ### Sharding
+* definition - distributes data across different databases such that each database  can only manage a subset of data
+    * ex:  facebook - users separated into different databases by last name
+* common ways to shard - by last name or by geographic location
+
+#### Benefits
+* less read and write traffic, less replication, more cache hits
+* index size reduced - improves performance with faster queries
+* no single central main serializing writes, allows to write in parallel with increased throughput
+
+#### Disadvantages
+* need to upate application logic to work with shards, could result in complex SQL queries
+* data distribution can become lopsided in shards
+    * ex: "gonzales" is a common last name
+    * rebalancing adds additional complexity
+    * sharding function based on consistent hashing can reduce the amount of transferred data
+* joining data from multiple shards is more complex
+* sharding adds more hardware and additional complexity
+
+### Normalization
+* multistep process to eliminate data redundancy and enhance data integrity in the table; sets the data into tabular form and removes the duplicated data from the relational tables
+* Normal Forms - the process of taking a database design and applying a set of formal criteria and rules
+* goals of database normalization - stramline data by reducing redundant data
+* drawbacks of redundancy:
+    1. data maintenance becomes tedious - data deletion and data updates become problematic
+    2. creates data inconsistences
+    3. insert, update, and delete anomalies become frequent - an update anomaly means that the versions of the same record, duplicated in different places in the database, will all need to be updated to keep the record consistent
+    4. redundant data inflates the size of a database and takes up an inordinate amount of space on disk
+
 ### Denormalization
+* attempts to improve read performance at the expense of some write performance - good for read-heavy systems
+* redundant copies of the data are written in multiple tables to avoid expensive joins
+* useful in federation and sharding scenarios - data are distributed, managing joins across data centers further increases complexity; denormalization might circumvent the need for such complex joins
+
+#### Disadvantages
+* data is duplicated - requires more disk space
+* constraints can help redundant copies of information stay in sync -> increases complexity of the database design
+* denormalized database under heavy write load might perform worse than its normalized counterpart
+
+
 ### SQL tuning
+* benchmark - simulate high-load situations
+* profile - enable tools such as the slow query log to help track performance issues
+
+Benchmarking and profiling might point you to the following optimizations:
+* Tighten up the schema
+    * MySQL dumps to disk in contiguous blocks for fast access
+    * Use `CHAR` instead of `VARCHAR` for fixed-length fields
+        * `CHAR` - allows for fast, random access
+        * `VARCHAR` - must find the end of the string before moving onto the next one
+    * Use `TEXT` for large blocks of text such as blog posts; `TEXT` allows for Boolean searches; `TEXT` results in storing a pointer on disk that is used to locate the text block
+    * Use `INT` for larger numbers up to 2^32 or 4 billion.
+    * Use `DECIMAL` for currency to avoid floating point representation errors
+    * Avoid storing large `BLOBS` and instead store the location of where to get the object instead
+    * `VARCHAR(255)` is the largest number of characters that can be counted in an 8-bit number, often maximizing the use of a byte in some RDBMS
+    * Set the `NOT NULL` constraint where applicable to improve search performance
+* Use good indices
+    * columns that are queried could be faster with indices
+    * indices are usually represented as a self-balancing B-tree that keeps data sorted and allows searches, sequential access, insertions, and deletions in logarithmic time
+    * placing an index can keep the data in memory, requiring more space
+    * writes could also be slower since the index also needs to be updated
+    * when loading large amounts of data, it might be faster to disable indices, load the data, then rebuild the indices
+* avoid expensive joins
+    * denomalize where performance demands it
+* partition tables
+    * break up a table by putting hot spots in a separate table to help keep it in memory
+* tune the query cache
+    * in some cases, the query cache could lead to performance issues
+
 ## NoSQL
 ### Key-value store
 ### Document store
