@@ -463,10 +463,30 @@ Sample data well-suited for NoSQL:
 * metadata/lookup tables
 
 # Cache
+Cache is a temporary storage of data
+
+## Process
+* In general, client requests The Thing from the dispatcher -> dispatcher hits the cache -> is The Thing in the cache? -> if yes, return data on The Thing to the client; if no, forward to worker -> worker responds to dispatcher -> dispatcher adds The Thing to the cache -> dispatcher responds to client
+
+## Benefits
+* caching improves page bload times
+* can reduce load on servers and databases
+    * dbs benefit from uniform distribution of reads and writes across partitions
+    * popular items can skew the distribution -> causes bottlenecks
+    * cache in front of database helps absorb uneven loads and spikes in traffic
+
 ## Client caching
+* localed on the client side (OS or browser), server-side, or in a distinct cache layer
+
 ## CDN caching
+* CDNs are considered caches
+
 ## Web server caching
+* reverse proxies can serve static and dynamic content directly
+* web servers can also cache requests, returning responses without having to contact application servers
+
 ## Database caching
+* 
 ## Application caching
 ## Caching at the database query level
 ## Caching at the object level
