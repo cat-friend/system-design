@@ -1,26 +1,14 @@
-# Scaling Ultimate Accelerator
+## Step 1: Outline use cases, constraints, and assumptions
+Gather requirements and scope the problem. Ask questions to clarify use cases and constraints. Discuss assumptions.
 
-# Step 1:  Outline use cases, constraints, and assumptions
 * Who is going to use it?
-  * casual jamers
 * How are they going to use it?
-  * probably read-heavy - only submitting data once-twice a week
-  * social messaging feature - probably not going to use it except to post an inside joke every once in a while since Discord exists
 * How many users are there?
-  * estimated 10k
 * What does the system do?
-  * helps apex legends players minimize playtime and maximize in-game rewards
 * What are the inputs and outputs of the system?
-  * inputs - game objectives
-  * outputs - objective status, efficient routes
-  * inputs - clan messages
-  * outputs - clan messages
 * How much data do we expect to handle?
-  * mostly text
 * How many requests per second do we expect?
-  *
 * What is the expected read to write ratio?
-* 
 
 # Step 2: Create a high level design
 Outline a high level design with all important components.
