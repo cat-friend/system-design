@@ -444,16 +444,16 @@ Data structure: graph
 * many graphs can only be access with ReST APIs
 
 ## SQL or NoSQL
-| reasons for SQL | reasons for NoSQL|
-|-----------------|------------------|
-| structured data | semi-structured data|
-| strict schema| dynamic or flexible schema|
-| relational data| non-relational data|
-|need for complex joins|no need for complex joins|
-|transactions|store many TB (or PB) of data|
-|clear patterns for scaling|very data intensive workload|
-| more established: developers, community, code, tools, etc| very high throughput for IOPS|
-|lookups by index are very fast| |
+| reasons for SQL                                           | reasons for NoSQL             |
+| --------------------------------------------------------- | ----------------------------- |
+| structured data                                           | semi-structured data          |
+| strict schema                                             | dynamic or flexible schema    |
+| relational data                                           | non-relational data           |
+| need for complex joins                                    | no need for complex joins     |
+| transactions                                              | store many TB (or PB) of data |
+| clear patterns for scaling                                | very data intensive workload  |
+| more established: developers, community, code, tools, etc | very high throughput for IOPS |
+| lookups by index are very fast                            |                               |
 
 Sample data well-suited for NoSQL:
 * rapid ingeset of clickstream and log data
@@ -486,22 +486,224 @@ Cache is a temporary storage of data
 * web servers can also cache requests, returning responses without having to contact application servers
 
 ## Database caching
-* 
+* dbs usually include some level of caching in a default configuration, optimized for generic use cases
+* tweaking these settings for specific usage patterns can further boost performance
+
 ## Application caching
+* in-memory caches are k:v stores between application and data storage
+* data is held in RAM - much faster than dbs stored on disk BUT RAM is more limited than disk, so cache invalidation algorithms such a LRU can help invalidate data that isn't used/needed
+
+* Redis's features
+    * persistence option
+    * built-in data structures such as sorted sets and lists
+
+* Multiple levels you can cache that fall into two categories:  database queries and objects
+* row level - database results
+* query-level
+* fully-formed serializable objects
+* fully-rendered HTML
+
+try to avoid file-based caching -> makes cloning and auto-scaling more difficult
+
 ## Caching at the database query level
+* when you query the db, hash the query as a key and store the result to the cache - suffers from expiration issues
+    * hard to delete a cached result with complex queries
+    * if one piece of data changes such as a table cell, need to delete all cached queries that might include the changed cell
+
 ## Caching at the object level
+* see your data as an object
+* have the application assemble the dataset from the database into a class instance or a data structure
+    * remove the object from cache if its underlying data has changed
+    * allows for asynchronous processing:  workers assemble objects by consuminig the latest cached object
+
+* common things to cache:
+    * user sessions
+    * fully rendered web pages
+    * activity streams
+    * user graph data
+
 ## When to update the cache
+* can only store limited amt of data in cache, need to decide which cache update strategy works best for your use case
+
 ### Cache-aside
+application is responsible for reading and writing from storage
+* cache does not interact with storage directly
+* application looks for entry in cache, resulting in a cache miss
+* application loads entry from the data base, adds it to the cache
+* application returns entry
+
+subsequent reads of data added to the cache are fast (O(1)); cache-aside is also referred to as lazy loading; only requested data is cached, avoids filling up the cache with data that isn't requested
+
+**DISADVANTAGES**:
+* each cache miss results in three trips - can cause a noticeable delay
+* data can become stale if it is updated in the ndatabase; mitigating by setting a TTL, which forces an update of the cache-entry, or by using a write-through
+* when a node fails, it is replaced by a new, empty node, increasing latency
+
 ### Write-through
+User request -> write to cache -> store in DB -> return to user
+* pattern used when cache as the main data store, reading and writing data to it, while the cache is responsible for reading and writing to the database
+
+* slowed by write operation; subsequent reads of data are FAST
+*  users are generally more tolerant of latency when updating data than reading data
+* data in the cache is not stale
+
+**DISADVANTAGES**:
+* on new node creation due to failure or scaling, the new node will not cache entries until the entry is updated in the database; cache-aside in conjunction with write through can mitigate this issue
+* most data written might never be read -- bad because waste of a cache space -- minimize unused cache data with a TTL
+*
 ### Write-behind (write-back)
+Process:
+* add/update entry in cache
+* asynchronously write entry to the data store, improving write performance
+
+**DISADVANTAGES**:
+* could be data loss if the cache goes down prior to its contents hitting the data store
+* more complex to implement a write-behind than it is to implement cache-aside or write-through
+
 ### Refresh-ahead
+* can configure the cache to automatically refresh any recently accessed cache entry prior to its expiration
+* can result in reduced latency vs read-through if the ncache can accurately predict which items are likely to be needed in the nfuture
+
+**DISADVANTAGES**:
+* not accurately predicting which items are likely to be needed in the nfuture can result in reduced performance without refresh-ahead
+
+## Cache disadvantages
+* need to maintain consistency between caches and the source of truth (database) through cache invalidation
+* cache invalidation is a difficult problem; additional complexity associated with when to update the cache
+* need to make application changes such as adding Redis or memcached
+
 # Asynchronism
+async workflows help reduce request times for expensive operations that would otherwise be performed in-linle
+* can also help by doing some time-consuming work in adance, such as periodic aggregation of data
+
 ## Message queues
+* message queues receive, hold, and deliver messages
+* if an operation is too slow to perform inline, can use a message queue with the following workflow:
+  * application publishes a job to the queue, then notifies the user of job status
+  * a worker picks up the job from the queue, processes it, then signals the job is complete
+
+* User is not blocked and the job is processed in the background
+* during this time, the client might optionally do a small amount of processing to make it seem like the task has completing
+  * example: if posting a tweet, the tweet could be instantly posted to your timeline, but it could take some time before the tweet is actually delivered to all of your followers
+
+* Redis - useful as a simple message broker but the messages can be lost
+* RabbitMQ is popular but requires you to adapt to the AMQP protocol and manage your own nodes
+* Amazon SQS is hosted but can have high latency and has the possibility of messages being delivered twice
+
 ## Task queues
+* task queues receive tasks and their related data, runs them, then delivers their results
+* can support scheduling and  can be used to run computationally-intensive jobs in the nbackground
+* Celery has support for scheduling and primarily has python support
+
 ## Back pressure
+* if queues start to grow significantly, the queue size can become larger than memory, resulting in cache misses, disk reads, and even slower performance
+* back pressure can help alleviate these issues by limiting the queue size, thereby maintaining a high throughput rate and good response times for jobs already in the nqueue
+* once the queue fills up, clients get a serer busy or HTTP 503 status code to try again later
+* client can retry the request at a later time, perhaps with exponential backoff
+
+## Asynchronism disadvantages
+* use cases such as inexpensive calculations and realtime workflows might be better suited for synchronous operations, as introducing queues can add delays and complexity
+
 # Communication
+## HTTP
+Hypertext transfer protocol is a method for encoding and transporting data between a client and a server. HTTP is an application-layer protocol relying on lower-level protocols such as TCP and UDP
+* request/response protocol - clients issue requests and servers issue responses with relevant content and completion status info about the request
+* self-contained - allows requests and responses to flow through many intermediate routers and servers that perform load balancing, caching, encryption, and compression
+
+Request structure - HTTP request consists of a verb (method) and a resource (endpoint). common HTTP verbs:
+* GET - reads a resource, idempotent, safe, and cacheable
+* POST - creates a resource or triggers a process that handles data, not idempotent, unsafe, only cacheable if response contains freshness info
+* PUT - creates or replaces a resource, idempotent, unsafe, and not cacheable
+* PATCH - partially updates a resource, not idempotent, unsafe, not cacheable
+* DLETE - deletes a resource, idempotent, unsafe, not cacheable
+
+_idempotent_ - denoting an element of a set which is unchanged in value when multipled or otherwise operated on by itself - HTTP method is idempotent if an identical request can be made once or several times in a row with the same effect while leaving the server in the same states - idempotent method should not have any side-effects
+
 ## Transmission control protocol (TCP)
+* connection-orientedd protocol over an IP network
+* connection is established and terminated using a handshake
+* all packets sent are guaranteed to reach the destination in the original order and without corruption through:
+  * sequence numbers and checksum fields for each packet
+  * acknowledgement packets and automatic retransmission
+* if a sender does not receive a correct response, it will resent the packets
+* if there are multiple timeouts, the connection is dropped
+* TCP also implements flow control and congestion control
+* these guarantees cause delays and generally result in less efficient transmission than UDP
+* to ensure high throughput, web servers can keep a large number of TCP connections open, resulting in high memory usage
+* can be expensive to have a large number of open connections between web server threads and a memcached servre
+* connection pooling can help in addition to switching to UDP where applicable
+* useful for applications that require high reliability but are less time critical, like web servers, database info, SMTP, FTP, and SSH
+
+* Use TCP over UDP when
+  * need _all_ of the data to arrive intact
+  * want to automatically make a best estimate use of the network throughput
+
 ## User datagram protocol (UDP)
+* connectionless
+* datagrams (analogous to packets) are guaranteed only at the datagram level
+* datagrams might reach their destination out of order or not at all
+* does NOT support congestion control
+* generally more efficient
+* can broadcast datagrams to all devices on the subnet
+  * useful with DHCP because the client has not yet received an IP address --> no IP address = prevents a way for T CP to stream without the IP address
+  * LESS RELIABLE but works well in real-time use cases such as VoIP chat, streaming, and realtime multiplayer games
+
+* Use UDP over TCP when
+  * you need the lowest latency
+  * late data is worse than loss of data
+  * you want to implement your own error correction
+
 ## Remote procedure call (RPC)
+* a client causes a procedure to execute on a different address space, usually a remote server
+* procedure is coded as if it were a local procedure call, abstracting away the details of how to communicate with the server from the client program
+* usually slower and less reliable than local calls, so it's helpful to distinguish local calls from RPC
+* RPC is a request-response protocol
+  * client program calls the client stub procedure
+    * parameters are pushed onto the stack like a local procedure call
+  * client stub procedure - mashals (packs) procedure id and arguments into a request message
+  * client communication module - OS sends the message from the client to the server
+  * server communication module - OS passes the incoming packets to the nserver stub procedure
+  * server stub procedure - unmarshalls the results, calls the server procedure matching the procedure id and passes the given arguments
+  * the server response repeats the steps above in reverse order
+
+
+* RPC is focused on exposive behaviors
+* often used for performance reasons with internal communications, as ou can handecraft native calls to better fit your use cases
+* choose a native library (aka SDK) when
+  * you know your target platform
+  * you want to control how your "logic" is accessed
+  * you want to control how error control happens off your library
+  * performance and end user experience is your primary concern
+
+HTTP APIs following REST tend to be used more often for public APIs
+
+**DISADVANTAGES**:
+* RPC clients become tightly coupled to the server implementation
+* a new API must be defined for every new operation or use case
+* can be difficult to debug RPC
+* might not be able to leverage existing technologies out of the box -- like might require additional effort to ensure RPC calls are properly cached on caching servers such as squid
+
 ## Representational state transfer (REST)
+ReST is an architectural style enforcing a client/server model where the client acts on a set of resources managed by teh server
+* server provides a representation of resources and actions that can either manipulate or get a new representation of resouroces
+* all communication must be stateless and cacheable
+
+Four qualities of a ReSTful interface:
+* identify resources (URI in HTTP)
+  * use the same URI regardless of any operation
+* change with representations (verbs in HTTP) - use verbs, headers, and body
+* self-descriptive error message (status response in HTTP) - status codes
+* HATEOAS (HTML interface for HTTP) - web service should be fully accessible in a browser
+
+* ReST is focused on _exposing data_; minimizes the coupling between client/server and is often used for public HTTP APIs. ReST uses a more generic and uniform method of exposing resources through URIs, representation through headeres, and actions through verbs. being stateless, ReST is great for horizontal scaling and partitioning
+
+**DISADVANTAGES**:
+* since ReSt is focused on exposing data, it might not  be a good fit if resources are not naturally organized or accessed in a simple hierarchy
+* ReST typically relies on a few verbs which sometimes doesn't fit your use case
+  * ex: moving expired documents to the archive folder might not cleanly fit within these verbs
+* fetching complicated resources with nested hierarchies requires multiple round trips between the client and server to render single views
+  * ex: fetching content of a blog entry and the comments on that entry
+  * for mobile applications operating in variable network conditions, these multiple roundtrips are highly undesirable
+* over time, more fields might be added to an api response and older clients will receive all new data fields, even those that they do not need, as a result, it bloats the payload size and leads to larger latencies
+
 # Security
