@@ -23,7 +23,7 @@ subgraph implementation
     end
 
     subgraph CacheStrategy
-        mru[MRU cache]
+        lru[LRU cache]
     end
 
     db[(Database)]
@@ -34,10 +34,16 @@ subgraph implementation
     API --> controller
     controller --> Service
     Service --> CacheStrategy
-    mru --> db
-    db --> mru
+    lru --> db
+    db --> lru
     CacheStrategy -- redirect URL --> Browser
 
     Browser --> Z[Browser loads URL]
 end
 ```
+
+## Questions
+- max indices for LRU cache
+- TTL in cache - does it matter if using LRU?
+- LRU is in mem - how to do redundancy?
+    - write to file / cloud storage
